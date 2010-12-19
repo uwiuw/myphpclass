@@ -186,7 +186,9 @@ class Wp_ArchieveLink {
 
             /**
              * processeing
-             * @todo : menambah properties standar bagi class ini seperti $after, $before, $format
+             * @todo :  menambah properties standar bagi class ini seperti $after, $before, $format
+             * @todo :  algoritma darurat ini sebaiknya diganti dengan metode yg rapi dan
+             *          tidak membingungkan
              */
             $format = 'custom';
             $before = ' [';
@@ -197,18 +199,19 @@ class Wp_ArchieveLink {
                 $before = '<div class="year">';
                 $after = '</div>';
                 $output = get_archives_link($url, $text, $format, $before, $after);
-
                 
                 $month_number = 0;
                 foreach ($arcresults as $arcresult) {
                     if ($month_number >= 13) {
-                        $month_number = 1;
+                        $month_number = 0;
                     }
                     
                     if ($years->year == $arcresult->year ) {
                         $month_number++;
                         /***
                          * try to print all month event those who doesn't have post in it
+                         * $last_haspost_month bertugas sbg penanda bagi
+                         * operasi CONDITIONAL Ke-2 (below)
                          */
                         $last_haspost_month = $arcresult->month;
                         while($month_number < 13 && $month_number < $last_haspost_month) {
@@ -227,6 +230,8 @@ class Wp_ArchieveLink {
                         $output .= get_archives_link($url, $text, $format, $before, $after);
                      } else {
                            /**
+                            * CONDITIONAL Ke-2
+                            * 
                             * Reverting last year's month that consist posts. then ileterate into
                             * tha last possible months (bulan ke-12)
                             */
