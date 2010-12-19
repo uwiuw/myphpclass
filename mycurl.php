@@ -1,5 +1,20 @@
 <?php
-
+/**
+ * Library for curl outside website. based on ???
+ *
+ * @uses wordpress core 3.0.x
+ * @category Options
+ * @package Options
+ * @subpackage Option
+ * @example
+ *
+ * @version 0.0.1 19desc2010
+ *
+ * @access public
+ * @todo
+ * @author uwiuw
+ * @copyright 2010 uwiuw
+ */
 
 class mycurl{
 
@@ -201,7 +216,7 @@ class mycurl{
         if (!preg_match_all('/<([a-z][^>]*)>/iu', $text, $matches)) {
             return array();
         }
-        
+
         $elements = $matches[1];
         $value_pattern = '=(("([^"]*)")|([^\s]*))';
 
