@@ -14,7 +14,7 @@
  *
  * @access public
  *
- * @author uwiuw
+ * @author @uwiuw
  * @copyright 2010 uwiuw
  */
 
@@ -80,7 +80,7 @@ class Wp_ArchieveLink {
      }
 
     /**
-    * determine target url for pagiantion class
+    * determine url for pagination class target_url properties
     */
      public function set_target_url($target_url) {
          if (empty($target_url )) {
@@ -88,27 +88,45 @@ class Wp_ArchieveLink {
                 $this->target_url = get_permalink();
             }
          }
-         return $this->target_url = $target_url;
+
+         $this->target_url = $target_url;
      }
+
+     /**
+      * get target url that need for pagination
+      * @return string
+      */
      public function get_target_url() {
         return $this->target_url;
      }
 
+     /**
+      * get the pagination file path
+      *
+      * @return string
+      */
      public function get_paginationfilepath() {
         return $this->paginationfilepath;
      }
 
+     /**
+      * set the pagination file path
+      *
+      * @param string $paginationfilepath the path file of pagination class
+      * @return string
+      */
      public function set_paginationfilepath($paginationfilepath) {
          if (empty($paginationfilepath )) {
             if ($this->paginationfilepath == '') {
                 $this->paginationfilepath = TRUE;
             }
          }
-         return $this->paginationfilepath = $paginationfilepath;
+
+         $this->paginationfilepath = $paginationfilepath;
      }
 
     /**
-    * changing month properties of wp_locale class, a global wp variable
+    * brige changing month properties of wp_locale class, a global wp variable
     */
      private function BridgeIntoWpLocale(){
         if (empty($this->month)) {
@@ -153,7 +171,7 @@ class Wp_ArchieveLink {
             $query = "SELECT DISTINCT YEAR(post_date) AS `year` FROM $wpdb->posts
                         $where
                         GROUP BY YEAR(post_date)
-                        ORDER BY post_date DESC
+                        ORDER BY post_date ASC
                         $limit";
             $yearresults = $wpdb->get_results($query);
 
@@ -178,45 +196,67 @@ class Wp_ArchieveLink {
 				$text = sprintf('%d', $years->year);
                 $before = '<div class="year">';
                 $after = '</div>';
-                $output .= get_archives_link($url, $text, $format, $before, $after);
+                $output = get_archives_link($url, $text, $format, $before, $after);
 
-                $month_number = 1;
+                
+                $month_number = 0;
                 foreach ($arcresults as $arcresult) {
-                    /***
-                     * try to print all month event those who doesn't have post in it
-                     */
-                    while($month_number <= 13 && $month_number < $arcresult->month) {
-                        $before = '<div class="nopost">';
-                        $after = '</div>';
-                        $text = sprintf(__('%1$s'), $wp_locale->get_month($month_number));
-                        $output .=  "\t$before $text $after\n";
-
-                        $month_number++;
+                    if ($month_number >= 13) {
+                        $month_number = 1;
                     }
+                    
+                    if ($years->year == $arcresult->year ) {
+                        $month_number++;
+                        /***
+                         * try to print all month event those who doesn't have post in it
+                         */
+                        $last_haspost_month = $arcresult->month;
+                        while($month_number < 13 && $month_number < $last_haspost_month) {
+                            $before = '<div class="nopost">';
+                            $after = '</div>';
+                            $text = sprintf(__('%1$s'), $wp_locale->get_month($month_number));
+                            $output .=  "\t$before $text $after\n";
+                            $month_number++;
+                        }
 
-                    $before = '<div class="haspost">';
-                    $after = '</div>';
+                        $before = '<div class="haspost">';
+                        $after = '</div>';
 
-                    $url = get_month_link( $arcresult->year, $arcresult->month );
-                    $text = sprintf(__('%1$s'), $wp_locale->get_month($arcresult->month));
-                    $output .= get_archives_link($url, $text, $format, $before, $after);
-                    $month_number++;
+                        $url = get_month_link( $arcresult->year, $arcresult->month );
+                        $text = sprintf(__('%1$s'), $wp_locale->get_month($arcresult->month));
+                        $output .= get_archives_link($url, $text, $format, $before, $after);
+                     } else {
+                           /**
+                            * Reverting last year's month that consist posts. then ileterate into
+                            * tha last possible months (bulan ke-12)
+                            */
+                            while($last_haspost_month < 13) {
+                                $last_haspost_month++;
+                                $before = '<div class="nopost">';
+                                $after = '</div>';
+                                $text = sprintf(__('%1$s'), $wp_locale->get_month($last_haspost_month));
+                                $output .=  "\t$before $text $after\n";
+                            }
+
+                           continue;
+                     }
                 }
 
                 $beforeyear = '<li>';
                 $afteryear = '</li>';
                 /***
-                 * adding xhtml after year/before years
+                 * adding xhtml after year/before years where the latest post will be
+                 * in highest ladders
                  */
-                $output = "\t$beforeyear $output $afteryear\n";
-
+                $last_output = $beforeyear . $output . $afteryear . $last_output;
             }
         }
 
+
         if ($this->get_echo() == TRUE){
-            echo $output;
+            echo $last_output;
         } else {
-            return $output;
+            return $last_output;
         }
     }
 
@@ -228,7 +268,7 @@ class Wp_ArchieveLink {
      * @param <type> $pagination
      * @return mixed
      */
-    public function get_YearlyArhieves($pagination=TRUE){
+    public function get_YearlyArhievesPosts($pagination=TRUE){
         global $wpdb;
 
         /*
@@ -329,7 +369,7 @@ class Wp_ArchieveLink {
     public function get_ArchivesLoop($pagination = TRUE){
         switch($this->type) {
             case 'yearly' :
-                $output = $this->get_YearlyArhieves($pagination);
+                $output = $this->get_YearlyArhievesPosts($pagination);
                 break;
             default :
                 break;
