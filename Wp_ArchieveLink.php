@@ -182,6 +182,9 @@ class Wp_ArchieveLink {
 
                 $month_number = 1;
                 foreach ($arcresults as $arcresult) {
+                    /***
+                     * try to print all month event those who doesn't have post in it
+                     */
                     while($month_number <= 13 && $month_number < $arcresult->month) {
                         $before = '<div class="nopost">';
                         $after = '</div>';
@@ -230,6 +233,7 @@ class Wp_ArchieveLink {
 
         /*
         * determine current_page to know where is our pagination page and for our main loop
+         * @todo membuat mode meretrieve all posts, lalu berdasar per-tahun,
         */
         $current_page = (get_query_var('paged')) ? get_query_var('paged') : get_query_var('page');
         $current_page = (!empty($current_page) && is_numeric($current_page) ) ? $current_page : 1;
@@ -237,7 +241,6 @@ class Wp_ArchieveLink {
         if ($pagination) {
 
             if (file_exists($pagination_path = $this->get_paginationfilepath() )) {
-
                 /*
                 * determine total post to know how many pagination
                 * the class 'pagination' will create
@@ -248,7 +251,6 @@ class Wp_ArchieveLink {
                             $where";
                 $postresults = $wpdb->get_results($query, ARRAY_A);
                 if (is_array($postresults)) {
-//                    $product_count = count($postesults);
                     $total_posts = count($postresults);
 
                     /**
