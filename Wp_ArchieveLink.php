@@ -147,6 +147,71 @@ class Wp_ArchieveLink {
         }
      }
 
+     public function get_date_from() {
+        $year = get_query_var('year');
+        $monthnum = get_query_var('monthnum');
+        $datenum = get_query_var('datenum');
+
+        $monthnum = !empty($monthnum) ? $monthnum : '01';
+        $datenum = !empty($datenum) ? $datenum : '01';
+
+        $monthnum = vsprintf("%02d", array($monthnum));
+        $datenum = vsprintf("%02d", array($datenum));
+        $date_from = $year . '-' . $monthnum . '-' . $datenum;
+
+        if ($date_from) {
+            $date_from = ' AND post_modified >= "' . $date_from  . '" ';
+
+            return $date_from;
+        }
+     }
+
+     public function get_date_to() {
+        $year = get_query_var('year');
+        $monthnum = get_query_var('monthnum');
+        $datenum = get_query_var('datenum');
+
+        /**
+         * has month number
+         */
+        if ($monthnum) {
+            /**
+             * checking combination of date
+             */
+            $monthnum = vsprintf("%02d", array($monthnum));
+            if ($datenum) {//
+                $datenum = vsprintf("%02d", array($datenum));
+                $date_to = $year . '-' . $monthnum . '-' . $datenum;
+            } else {
+                if (checkdate($monthnum, 31, $year)) {
+                    $date_to = $year . '-' . $monthnum . '-' . '31';
+                } elseif(checkdate($monthnum, 30, $year))  {
+                    $date_to = $year . '-' . $monthnum . '-' . '30';
+                } elseif(checkdate($monthnum, 29, $year))  {
+                    $date_to = $year . '-' . $monthnum . '-' . '29';
+                } elseif(checkdate($monthnum, 28, $year))  {
+                    $date_to = $year . '-' . $monthnum . '-' . '28';
+                }
+            }
+        } else {
+            $monthnum = 12;
+            if (checkdate($monthnum, 31, $year)) {
+                $date_to = $year . '-' . $monthnum . '-' . '31';
+            } elseif(checkdate($monthnum, 30, $year))  {
+                $date_to = $year . '-' . $monthnum . '-' . '30';
+            } elseif(checkdate($monthnum, 29, $year))  {
+                $date_to = $year . '-' . $monthnum . '-' . '29';
+            } elseif(checkdate($monthnum, 28, $year))  {
+                $date_to = $year . '-' . $monthnum . '-' . '28';
+            }
+        }
+
+        if ($date_to) {
+            $date_to = ' AND post_modified <= "'. $date_to  . '" ';
+            return $date_to;
+        }
+     }
+
      /**
       * Get the archives wih custom format where it will print post
       * based on years while it able to show a month with empty posts.
@@ -161,7 +226,7 @@ class Wp_ArchieveLink {
      public function get_YearsLinkArchives($echo = TRUE) {
         global $wpdb, $wp_locale;
 
-        $where = "WHERE post_type = 'post' AND post_status = 'publish'";
+        $where = "WHERE post_type = 'post' AND post_status = 'publish' ";
         $join = '';
         $limit ='';
         if ( 'monthly' == $this->get_type()) {
@@ -199,13 +264,13 @@ class Wp_ArchieveLink {
                 $before = '<div class="year">';
                 $after = '</div>';
                 $output = get_archives_link($url, $text, $format, $before, $after);
-                
+
                 $month_number = 0;
                 foreach ($arcresults as $arcresult) {
                     if ($month_number >= 13) {
                         $month_number = 0;
                     }
-                    
+
                     if ($years->year == $arcresult->year ) {
                         $month_number++;
                         /***
@@ -225,13 +290,18 @@ class Wp_ArchieveLink {
                         $before = '<div class="haspost">';
                         $after = '</div>';
 
-                        $url = get_month_link( $arcresult->year, $arcresult->month );
+                        $url = get_month_link( $arcresult->year, $arcresult->month ) . '/';
+
+
+
                         $text = sprintf(__('%1$s'), $wp_locale->get_month($arcresult->month));
                         $output .= get_archives_link($url, $text, $format, $before, $after);
+
+
                      } else {
                            /**
                             * CONDITIONAL Ke-2
-                            * 
+                            *
                             * Reverting last year's month that consist posts. then ileterate into
                             * tha last possible months (bulan ke-12)
                             */
@@ -273,7 +343,7 @@ class Wp_ArchieveLink {
      * @param <type> $pagination
      * @return mixed
      */
-    public function get_YearlyArhievesPosts($pagination=TRUE){
+    public function get_YearlyArhievesPosts($pagination=TRUE, $date_from='', $date_to= ''){
         global $wpdb;
 
         /*
@@ -284,19 +354,29 @@ class Wp_ArchieveLink {
         $current_page = (!empty($current_page) && is_numeric($current_page) ) ? $current_page : 1;
 
         if ($pagination) {
-
             if (file_exists($pagination_path = $this->get_paginationfilepath() )) {
                 /*
                 * determine total post to know how many pagination
                 * the class 'pagination' will create
                 */
+                if (empty($date_from)) {
+                    $date_from = $this->get_date_from();
+                }
+                if (empty($date_to)) {
+                    $date_to = $this->get_date_to();
+                }
+
                 $where = ' WHERE post_type="post" AND post_status="publish" ';
+                $where .= $date_from . $date_to;
+
                 $query = "SELECT ID, guid, post_type, post_date, post_title, post_status
                             FROM $wpdb->posts
                             $where";
                 $postresults = $wpdb->get_results($query, ARRAY_A);
+
                 if (is_array($postresults)) {
                     $total_posts = count($postresults);
+
 
                     /**
                      * get total pagination page that going to be created
@@ -329,11 +409,10 @@ class Wp_ArchieveLink {
             }
         } //end has_pagination state
 
-
         /**
         * get the main loop
         */
-        $output['main_loop'] = $this->get_YearlyArhieves_loop($current_page, $max_pagination_pages);
+        $output['main_loop'] = $this->get_YearlyArhieves_loop($current_page, $max_pagination_pages, $posts_per_page, $date_from, $date_to);
 
         return $output;
     }
@@ -348,12 +427,21 @@ class Wp_ArchieveLink {
      * @param <type> $max_pagination_pages
      * @return <type>
      */
-    public function get_YearlyArhieves_loop($current_page, $max_pagination_pages ) {
+    public function get_YearlyArhieves_loop($current_page, $max_pagination_pages, $posts_per_page, $date_from='', $date_to='' ) {
         global $wpdb;
 
+        if (empty($date_from)) {
+            $date_from = $this->get_date_from();
+        }
+        if (empty($date_to)) {
+            $date_to = $this->get_date_to();
+        }
+
         $where = ' WHERE post_type="post" AND post_status="publish" ';
+        $where .= $date_from . $date_to;
+
 		if ($max_pagination_pages != '') {
-            $limit = ' LIMIT ' . (($current_page - 1) * $max_pagination_pages) . ',' . $max_pagination_pages;
+            $limit = ' LIMIT ' . (($current_page - 1) * $max_pagination_pages) . ',' . $posts_per_page;
         }
 
         $query = "SELECT ID, post_type, post_date, post_title, post_status
