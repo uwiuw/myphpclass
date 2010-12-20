@@ -11,7 +11,7 @@
  * @version 0.0.1 19desc2010
  *
  * @access public
- * @todo
+ * @todo adding operation save of html file
  * @author uwiuw
  * @copyright 2010 uwiuw
  */
@@ -25,7 +25,10 @@ class mycurl{
         $this->myurl = '';
     }
 
-    public function save_web_page(){
+    /**
+    * set saving operation of a web page
+    */
+    public function set_saveWebPage(){
         if ($this->myurl != '') {
             $ch = curl_init($this->myurl);
             $fp = fopen("example_homepage.txt", "w");
@@ -42,11 +45,13 @@ class mycurl{
         }
 
     }
+
     /**
-     * Get a web file (HTML, XHTML, XML, image, etc.) from a URL.  Return an
-     * array containing the HTTP server response header fields and content.
-     */
-    function get_web_page() {
+    * Get a web file (HTML, XHTML, XML, image, etc.) from a URL.  Return an
+    * array containing the HTTP server response header fields and content.
+    * @return boolean
+    */
+    function get_webPage() {
         if (!empty($this->myurl)) {
             $url  = $this->myurl;
             $options = array(
@@ -73,7 +78,6 @@ class mycurl{
             $header['errmsg'] = $errmsg;
             $header['content'] = $content;
 
-
             /**
              * Error Checking
              */
@@ -94,16 +98,18 @@ class mycurl{
         }
     }
 
-
-    public function get_web_page_content(){
-        $result = $this->get_web_page();
+    /**
+    * get the key of content of the array that came from curl output
+    * @return <type>
+    */
+    public function get_webPageContent(){
+        $result = $this->get_webPage();
         if (!isset($result['error'])) {
             return $result['content'];
         }
     }
 
-
-    public function gettoken($token) {
+    public function get_token($token) {
         if (empty($token)) {
             $token = $this->token;
         } else {
@@ -111,15 +117,13 @@ class mycurl{
         }
 
         return rawurldecode ($token);
-
     }
-    /**
- * Extract URLs from a web page.
- */
 
-    public function extract_html_urls( $text )
-{
-    $match_elements = array( // HTML
+    /**
+    * get list of urls from a webpage
+    */
+    public function get_urlsFromHtml( $text ){
+        $match_elements = array( // HTML
             array('element' => 'a', 'attribute' => 'href'), // 2.0
             array('element' => 'a', 'attribute' => 'urn'), // 2.0
             array('element' => 'base', 'attribute' => 'href'), // 2.0
@@ -203,99 +207,106 @@ class mycurl{
             array('element' => 'wml', 'attribute' => 'xmlns'), // 2.0
         );
 
-        $match_metas = array(
-            'content-base',
-            'content-location',
-            'referer',
-            'location',
-            'refresh',
-        );
+            $match_metas = array(
+                'content-base',
+                'content-location',
+                'referer',
+                'location',
+                'refresh',
+            );
+
+            /**
+             * Extract all elements
+             */
+            if (!preg_match_all('/<([a-z][^>]*)>/iu', $text, $matches)) {
+                return array();
+            }
+
+            $elements = $matches[1];
+            $value_pattern = '=(("([^"]*)")|([^\s]*))';
 
 
-        // Extract all elements
-        if (!preg_match_all('/<([a-z][^>]*)>/iu', $text, $matches)) {
-            return array();
-        }
-
-        $elements = $matches[1];
-        $value_pattern = '=(("([^"]*)")|([^\s]*))';
-
-
-        // Match elements and attributes
-        foreach ($match_elements as $match_element) {
-            $name = $match_element['element'];
-            $attr = $match_element['attribute'];
-            $pattern = '/^' . $name . '\s.*' . $attr . $value_pattern . '/iu';
-            if ($name == 'object')
-                $split_pattern = '/\s*/u';  // Space-separated URL list
-            else if ($name == 'archive')
-                $split_pattern = '/,\s*/u'; // Comma-separated URL list
-            else
-                unset($split_pattern);    // Single URL
-            foreach ($elements as $element) {
-                if (!preg_match($pattern, $element, $match))
-                    continue;
-                $m = empty($match[3]) ? $match[4] : $match[3];
-                if (!isset($split_pattern))
-                    $urls[$name][$attr][] = $m;
-                else {
-                    $msplit = preg_split($split_pattern, $m);
-                    foreach ($msplit as $ms)
-                        $urls[$name][$attr][] = $ms;
+            // Match elements and attributes
+            foreach ($match_elements as $match_element) {
+                $name = $match_element['element'];
+                $attr = $match_element['attribute'];
+                $pattern = '/^' . $name . '\s.*' . $attr . $value_pattern . '/iu';
+                if ($name == 'object')
+                    $split_pattern = '/\s*/u';  // Space-separated URL list
+                else if ($name == 'archive')
+                    $split_pattern = '/,\s*/u'; // Comma-separated URL list
+                else
+                    unset($split_pattern);    // Single URL
+                foreach ($elements as $element) {
+                    if (!preg_match($pattern, $element, $match))
+                        continue;
+                    $m = empty($match[3]) ? $match[4] : $match[3];
+                    if (!isset($split_pattern))
+                        $urls[$name][$attr][] = $m;
+                    else {
+                        $msplit = preg_split($split_pattern, $m);
+                        foreach ($msplit as $ms)
+                            $urls[$name][$attr][] = $ms;
+                    }
                 }
             }
-        }
 
-        // Match meta http-equiv elements
-        foreach ($match_metas as $match_meta) {
-            $attr_pattern = '/http-equiv="?' . $match_meta . '"?/iu';
-            $content_pattern = '/content' . $value_pattern . '/iu';
-            $refresh_pattern = '/\d*;\s*(url=)?(.*)$/iu';
+            /*
+             *  Match meta http-equiv elements
+             */
+            foreach ($match_metas as $match_meta) {
+                $attr_pattern = '/http-equiv="?' . $match_meta . '"?/iu';
+                $content_pattern = '/content' . $value_pattern . '/iu';
+                $refresh_pattern = '/\d*;\s*(url=)?(.*)$/iu';
+                foreach ($elements as $element) {
+                    if (!preg_match('/^meta/iu', $element) ||
+                            !preg_match($attr_pattern, $element) ||
+                            !preg_match($content_pattern, $element, $match))
+                        continue;
+                    $m = empty($match[3]) ? $match[4] : $match[3];
+                    if ($match_meta != 'refresh')
+                        $urls['meta']['http-equiv'][] = $m;
+                    else if (preg_match($refresh_pattern, $m, $match))
+                        $urls['meta']['http-equiv'][] = $match[2];
+                }
+            }
+
+            /*
+             *  Match style attributes
+             */
+            $urls['style'] = array();
+            $style_pattern = '/style' . $value_pattern . '/iu';
             foreach ($elements as $element) {
-                if (!preg_match('/^meta/iu', $element) ||
-                        !preg_match($attr_pattern, $element) ||
-                        !preg_match($content_pattern, $element, $match))
+                if (!preg_match($style_pattern, $element, $match))
                     continue;
                 $m = empty($match[3]) ? $match[4] : $match[3];
-                if ($match_meta != 'refresh')
-                    $urls['meta']['http-equiv'][] = $m;
-                else if (preg_match($refresh_pattern, $m, $match))
-                    $urls['meta']['http-equiv'][] = $match[2];
-            }
-        }
-
-        // Match style attributes
-        $urls['style'] = array();
-        $style_pattern = '/style' . $value_pattern . '/iu';
-        foreach ($elements as $element) {
-            if (!preg_match($style_pattern, $element, $match))
-                continue;
-            $m = empty($match[3]) ? $match[4] : $match[3];
-            $style_urls = $this->extract_css_urls($m);
-            if (!empty($style_urls))
-                $urls['style'] = array_merge_recursive(
-                                $urls['style'], $style_urls);
-        }
-
-        // Match style bodies
-        if (preg_match_all('/<style[^>]*>(.*?)<\/style>/siu', $text, $style_bodies)) {
-            foreach ($style_bodies[1] as $style_body) {
-                $style_urls = $this->extract_css_urls($style_body);
+                $style_urls = $this->get_urlsFromCss($m);
                 if (!empty($style_urls))
                     $urls['style'] = array_merge_recursive(
                                     $urls['style'], $style_urls);
             }
-        }
-        if (empty($urls['style']))
-            unset($urls['style']);
 
-        return $urls;
+            /*
+             *  Match style bodies
+             */
+            if (preg_match_all('/<style[^>]*>(.*?)<\/style>/siu', $text, $style_bodies)) {
+                foreach ($style_bodies[1] as $style_body) {
+                    $style_urls = $this->get_urlsFromCss($style_body);
+                    if (!empty($style_urls))
+                        $urls['style'] = array_merge_recursive(
+                                        $urls['style'], $style_urls);
+                }
+            }
+            if (empty($urls['style']))
+                unset($urls['style']);
+
+            return $urls;
     }
 
     /**
      * Extract URLs from CSS text.
      */
-    public function extract_css_urls($text) {
+    public function get_urlsFromCss($text) {
         $urls = array();
 
         $url_pattern = '(([^\\\\\'", \(\)]*(\\\\.)?)+)';
@@ -333,34 +344,3 @@ class mycurl{
         return $urls;
     }
 }
-
-if (!empty($_POST['myurl'])) {
-    $mycurl = new mycurl;
-    $mycurl->myurl = (string) $_POST['myurl'];
-    $output = $mycurl->get_web_page_content();
-    $url = $mycurl->extract_html_urls($output);
-
-
-    $hasildebug = print_r($url, TRUE);
-    echo '<pre style="font-size:14px">' . '$url : ' . htmlentities($hasildebug) . '</pre>';
-
-
-
-    //$url = $mycurl->extract_html_urls($output); //find list url form a page
-    $output = strip_tags($output);
-    $output = explode('flashvars.video_url = ', $output);
-    $output = explode(';', $output[1]);
-    $output = explode("'", $output[0]);
-
-    $url = rawurldecode ($output[1]);
-    if (!empty($url)) {
-        echo '<a href ="' . $url . '">go</a>';
-    } else {
-        echo $mycurl->myurl . " has no flashvars.video_url";
-    }
-} ?>
-
-<form name="myurl" method="post">
-    <input type="text" name="myurl" value="<?php echo $_POST['myurl'] ?>" style="width:800px;"/>
-    <input type="submit" value="go fetch" />
-</form>
