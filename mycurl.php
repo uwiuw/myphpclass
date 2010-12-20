@@ -11,7 +11,19 @@
  * @version 0.0.1 19desc2010
  *
  * @access public
- * @todo adding operation save of html file
+ * @todo test and perfectiong operation save of html file
+ * @todo simplefied curl operation in home.php and transfer all of its
+ *      messaging mechanism into this class
+ * @todo otomatic download --> make this class able to download file without user have to click the link and
+ *      save it via browser. if possible, let's the class do it for yoou
+ * @todo if otomatic download berhasil maka tambahkan cronjob. kemampuan mengeksekusi cron
+ *      sehingga bisa melakukan download sesuai interval yg telah ditentukan di dalam database
+ * @todo kemampuan mengukur ukuran file
+ * @todo tambahkan kemampuan mendownload dari berbagai layanan website lain
+ *          1. youtube
+ *          2. youporn
+ *          3. dll
+ *          4. komik
  * @author uwiuw
  * @copyright 2010 uwiuw
  */
@@ -51,9 +63,13 @@ class mycurl{
     * array containing the HTTP server response header fields and content.
     * @return boolean
     */
-    function get_webPage() {
-        if (!empty($this->myurl)) {
-            $url  = $this->myurl;
+    function get_webPage($url ='') {
+        if (!empty($this->myurl) || !empty($url)) {
+            if (!$url) {
+                $url  = $this->myurl;
+            }
+
+
             $options = array(
                 CURLOPT_RETURNTRANSFER => true, // return web page
                 CURLOPT_HEADER => false, // don't return headers
@@ -104,6 +120,12 @@ class mycurl{
     */
     public function get_webPageContent(){
         $result = $this->get_webPage();
+        if (!isset($result['error'])) {
+            return $result['content'];
+        }
+    }
+    public function get_webPageFileSize($url =''){        
+        $result = $this->get_webPage($url);
         if (!isset($result['error'])) {
             return $result['content'];
         }
