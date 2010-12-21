@@ -18,8 +18,7 @@
  *      save it via browser. if possible, let's the class do it for yoou
  * @todo if otomatic download berhasil maka tambahkan cronjob. kemampuan mengeksekusi cron
  *      sehingga bisa melakukan download sesuai interval yg telah ditentukan di dalam database
- * @todo kemampuan mengukur ukuran file
- * @todo tambahkan kemampuan mendownload dari berbagai layanan website lain
+ * @todo tambahkan kemampuan mendownload dari berbagai layanan website populer
  *          1. youtube
  *          2. youporn
  *          3. dll
@@ -125,10 +124,22 @@ class mycurl{
         }
     }
     public function get_webPageFileSize($url =''){        
-        $result = $this->get_webPage($url);
-        if (!isset($result['error'])) {
-            return $result['content'];
-        }
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_NOBODY, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        $data = curl_exec($ch);
+        curl_close($ch);
+        if ($data === false)
+            return false;
+        if (preg_match('/Content-Length: (\d+)/', $data, $matches))
+            return (float) $matches[1];
+    }
+
+    function get_webPageFileSizeformat($size) {
+        $units = array(' B', ' KB', ' MB', ' GB', ' TB');
+        for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
+        return round($size, 2).$units[$i];
     }
 
     public function get_token($token) {
