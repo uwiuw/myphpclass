@@ -445,9 +445,8 @@ class keezmovies{
 
 /**
  * @todo Lists of todo
- * 1. Pindahkan Form dibawah ini kedalam class khusus
- * 3. memiliki mekanisme yg lebih siap untuk bridge
- * 4. memiliki nama variable yg mirip dengan mycurl
+ * 4. memiliki nama-nama properties yg mirip dengan mycurl
+ * 5. Kemampuan mendownload lebih dari satu video persekali klik submit button
  * inspired by http://vipld.com/how-to-download-video-from-youtube-using-php/
  */
 class youtube {
@@ -624,6 +623,7 @@ class youtube {
      */
     public function do_inject(){
         if ($output = $this->output) {
+            ini_set('max_execution_time', 0);
             return $this->download_track($output);
         }
     }
