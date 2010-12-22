@@ -455,6 +455,12 @@ class youtube {
     public $video_url = '';
     public $title = '<h3>Youtube Downloads by @uwiuw</h3>';
 
+    /**
+     * get the url of flv file
+     * 
+     * @param <type> $data
+     * @return string url of the flv file
+     */
     function get_flv($data)
     {
 
@@ -480,6 +486,9 @@ class youtube {
         }
     }
 
+    /**
+     * get the html output by mimicing http request of browser
+     */
     function get_html($url)
     {
         $ch = curl_init();
@@ -512,6 +521,13 @@ class youtube {
         return($result);
     }
 
+    /**
+     * download the file
+     *
+     * @param <type> $url
+     * @param <type> $filename
+     * @return <type>
+     */
     function get_file($url, $filename)
     {
         $file = fopen($filename, 'wb');
@@ -541,7 +557,9 @@ class youtube {
     }
 
     /***
-     * buat kemampaun method bisa mereturn value url yg berasal dari kumpulan array
+     * get list of youtube url and then download it
+     *
+     * @todo buat kemampaun method bisa mereturn value url yg berasal dari kumpulan array
      * coba periksa cara penggunaannya pada class ini
      */
     function download_playlist($tracks)
@@ -560,6 +578,8 @@ class youtube {
     }
 
     /**
+     * get the file url and then download it
+     * 
      * @todo    buat class ini bisa mengkomunikasikan pesan error yg terjadi
      *          dengan form yg ada di home.php. Saat ini internal error cuma
      *          bisa di-echo. Tapi tidak bisa dibypass ke class mycurl
@@ -597,6 +617,8 @@ class youtube {
     }
 
     /**
+     * method for bridging with other class (in this context, it would be myclass)
+     * 
      * @todo testing how the brigde works
      * @return string url file
      */
@@ -606,8 +628,17 @@ class youtube {
         }
     }
 
+    /**
+     * do the basic operation
+     * 
+     * @param <type> $url
+     * @return mixed string of url of false
+     */
     function init($url) {
-        //make the download have no script time limitation. it will excecuted forever if they have to
+        /**
+         * make the download have no script time limitation. it will excecuted forever
+         * if they have to
+         */
         ini_set('max_execution_time',0);
 
         $vars = end(explode('?',$url));
