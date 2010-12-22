@@ -41,7 +41,7 @@ class mycurl{
 
     public function set_title($title) {
         $this->title = $title;
-    }    
+    }
     public function get_title() {
         return $this->title;
     }
@@ -457,7 +457,7 @@ class youtube {
 
     /**
      * get the url of flv file
-     * 
+     *
      * @param <type> $data
      * @return string url of the flv file
      */
@@ -541,7 +541,7 @@ class youtube {
         curl_exec($ch);
         curl_close($ch);
         fclose($file);
-        
+
         return(true);
     }
 
@@ -579,7 +579,7 @@ class youtube {
 
     /**
      * get the file url and then download it
-     * 
+     *
      * @todo    buat class ini bisa mengkomunikasikan pesan error yg terjadi
      *          dengan form yg ada di home.php. Saat ini internal error cuma
      *          bisa di-echo. Tapi tidak bisa dibypass ke class mycurl
@@ -618,19 +618,19 @@ class youtube {
 
     /**
      * method for bridging with other class (in this context, it would be myclass)
-     * 
+     *
      * @todo testing how the brigde works
      * @return string url file
      */
     public function do_inject(){
         if ($output = $this->output) {
-            return $this->download_track($data);
+            return $this->download_track($output);
         }
     }
 
     /**
      * do the basic operation
-     * 
+     *
      * @param <type> $url
      * @return mixed string of url of false
      */
