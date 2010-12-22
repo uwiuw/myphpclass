@@ -11,7 +11,7 @@
  * @version 0.0.1 19desc2010
  *
  * @access public
- * @todo test and perfectiong operation save of html file
+ * @todo test and perfecting operation save of html file
  * @todo simplefied curl operation in home.php and transfer all of its
  *      messaging mechanism into this class
  * @todo otomatic download --> make this class able to download file without user have to click the link and
@@ -23,6 +23,8 @@
  *          2. youporn
  *          3. dll
  *          4. komik
+ * @todo buat method yg mampu mengurus class yg bekerja sebagai loop. class ini akan diinjekkan kedalam
+	class mycurl sehingga keduanya bisa independent dari satu sama lain akan tetapi tetap bisa bekerja sama
  * @author uwiuw
  * @copyright 2010 uwiuw
  */
@@ -54,76 +56,9 @@ class mycurl{
 
             fclose($fp);
         }
-
     }
 
-    /**
-    * Get a web file (HTML, XHTML, XML, image, etc.) from a URL.  Return an
-    * array containing the HTTP server response header fields and content.
-    * @return boolean
-    */
-    function get_webPage($url ='') {
-        if (!empty($this->myurl) || !empty($url)) {
-            if (!$url) {
-                $url  = $this->myurl;
-            }
-
-
-            $options = array(
-                CURLOPT_RETURNTRANSFER => true, // return web page
-                CURLOPT_HEADER => false, // don't return headers
-                CURLOPT_FOLLOWLOCATION => true, // follow redirects
-                CURLOPT_ENCODING => "", // handle all encodings
-                CURLOPT_USERAGENT => "spider", // who am i
-                CURLOPT_AUTOREFERER => true, // set referer on redirect
-                CURLOPT_CONNECTTIMEOUT => 120, // timeout on connect
-                CURLOPT_TIMEOUT => 120, // timeout on response
-                CURLOPT_MAXREDIRS => 10, // stop after 10 redirects
-            );
-
-            $ch = curl_init($url);
-            curl_setopt_array($ch, $options);
-            $content = curl_exec($ch);
-            $err = curl_errno($ch);
-            $errmsg = curl_error($ch);
-            $header = curl_getinfo($ch);
-            curl_close($ch);
-
-            $header['errno'] = $err;
-            $header['errmsg'] = $errmsg;
-            $header['content'] = $content;
-
-            /**
-             * Error Checking
-             */
-            if ( $header['errno'] != 0 ) {
-                $error[] = 'error: bad url, timeout, redirect loop';
-            }
-
-            if ( $header['http_code'] != 200 ) {
-                $error[] = 'error: no page, no permissions, no service';
-            }
-
-            if (isset($error)) {
-                $error['error'] = TRUE;
-                return $error;
-            }
-
-            return $header;
-        }
-    }
-
-    /**
-    * get the key of content of the array that came from curl output
-    * @return <type>
-    */
-    public function get_webPageContent(){
-        $result = $this->get_webPage();
-        if (!isset($result['error'])) {
-            return $result['content'];
-        }
-    }
-    public function get_webPageFileSize($url =''){        
+    public function get_webPageFileSize($url =''){
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_NOBODY, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -137,9 +72,11 @@ class mycurl{
     }
 
     function get_webPageFileSizeformat($size) {
-        $units = array(' B', ' KB', ' MB', ' GB', ' TB');
-        for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
-        return round($size, 2).$units[$i];
+		if ($size != '') {
+			$units = array(' B', ' KB', ' MB', ' GB', ' TB');
+			for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
+			return round($size, 2).$units[$i];
+		}
     }
 
     public function get_token($token) {
@@ -315,8 +252,7 @@ class mycurl{
                 $m = empty($match[3]) ? $match[4] : $match[3];
                 $style_urls = $this->get_urlsFromCss($m);
                 if (!empty($style_urls))
-                    $urls['style'] = array_merge_recursive(
-                                    $urls['style'], $style_urls);
+                    $urls['style'] = array_merge_recursive($urls['style'], $style_urls);
             }
 
             /*
@@ -375,5 +311,109 @@ class mycurl{
                         preg_replace('/\\\\(.)/u', '\\1', $match);
 
         return $urls;
+    }
+    /**
+    * Get a web file (HTML, XHTML, XML, image, etc.) from a URL.  Return an
+    * array containing the HTTP server response header fields and content.
+    * @return boolean
+    */
+    function get_webPage($url ='') {
+        if (!empty($this->myurl) || !empty($url)) {
+            if (!$url) {
+                $url  = $this->myurl;
+            }
+
+            $options = array(
+                CURLOPT_RETURNTRANSFER => true, // return web page
+                CURLOPT_HEADER => false, // don't return headers
+                CURLOPT_FOLLOWLOCATION => true, // follow redirects
+                CURLOPT_ENCODING => "", // handle all encodings
+                CURLOPT_USERAGENT => "spider", // who am i
+                CURLOPT_AUTOREFERER => true, // set referer on redirect
+                CURLOPT_CONNECTTIMEOUT => 120, // timeout on connect
+                CURLOPT_TIMEOUT => 120, // timeout on response
+                CURLOPT_MAXREDIRS => 10, // stop after 10 redirects
+            );
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, $options);
+            $content = curl_exec($ch);
+            $err = curl_errno($ch);
+            $errmsg = curl_error($ch);
+            $header = curl_getinfo($ch);
+            curl_close($ch);
+
+            $header['errno'] = $err;
+            $header['errmsg'] = $errmsg;
+            $header['content'] = $content;
+
+            /**
+             * Error Checking
+             */
+            if ( $header['errno'] != 0 ) {
+                $error[] = 'error: bad url, timeout, redirect loop';
+            }
+
+            if ( $header['http_code'] != 200 ) {
+                $error[] = 'error: no page, no permissions, no service';
+            }
+
+            if (isset($error)) {
+                $error['error'] = TRUE;
+                return $error;
+            }
+
+            return $header;
+        }
+    }
+
+    /**
+    * get the key of content of the array that came from curl output
+    * @return <type>
+    */
+    public function get_webPageContent(){
+        $result = $this->get_webPage();
+        if (!isset($result['error'])) {
+            return $result['content'];
+        }
+    }
+
+    /**
+     * get external class and do the operation here
+     * 
+     * @param <type> $object
+     */
+    public function get_externalclass($external_object){
+        if (is_object($external_object)) {
+            return $external_object->do_inject();
+        }
+    }
+
+}
+
+/**
+ * special method that going to use in my_curl->get_externalclass()
+ * build for getting the url of keezmovies.com file. After click them, the file will
+ * get downloaded
+ * @example
+        $keezmovies = new keezmovies();
+        $keezmovies->output = $output;
+        $url = $mycurl->get_externalclass($keezmovies);
+ * @properties $output html putput came form main class.
+ */
+class keezmovies{
+    public $output = '';
+
+    public function do_inject(){
+        if ($output = $this->output) {
+            $output = strip_tags($output);
+            $output = explode('flashvars.video_url = ', $output);
+            $output = explode(';', $output[1]);
+            $output = explode("'", $output[0]);
+
+            $url = rawurldecode ($output[1]);
+
+            return $url;
+        }
     }
 }
