@@ -33,9 +33,17 @@ class mycurl{
 
     var $myurl;
     var $token;
+    var $title = '<h1>My Curl Form of Madness</h1>';
 
     public function mycurl(){
         $this->myurl = '';
+    }
+
+    public function set_title($title) {
+        $this->title = $title;
+    }    
+    public function get_title() {
+        return $this->title;
     }
 
     /**
@@ -380,12 +388,27 @@ class mycurl{
 
     /**
      * get external class and do the operation here
-     * 
+     *
      * @param <type> $object
+     * @return mixed the class can return anything that external class object will return
      */
     public function get_externalclass($external_object){
         if (is_object($external_object)) {
-            return $external_object->do_inject();
+
+            if (property_exists($external_object, 'title')) {
+                $this->set_title($this->get_title() . $external_object->title);
+            }
+
+            if (method_exists($external_object, 'do_inject')) {
+                return $external_object->do_inject();
+            } else {
+                echo get_class($external_object)  . ' class object has no "do_inject" method. This method is
+                    the brigde to communicate with mycurl class';
+                return false;
+            }
+        } else {
+           echo 'The object is not an instance of a class.';
+           return false;
         }
     }
 
@@ -403,6 +426,7 @@ class mycurl{
  */
 class keezmovies{
     public $output = '';
+    public $title = '<h3>Keezmovies Downloads Url by @uwiuw</h3>';
 
     public function do_inject(){
         if ($output = $this->output) {
@@ -414,6 +438,194 @@ class keezmovies{
             $url = rawurldecode ($output[1]);
 
             return $url;
+        }
+    }
+}
+
+
+/**
+ * @todo Lists of todo
+ * 1. Pindahkan Form dibawah ini kedalam class khusus
+ * 3. memiliki mekanisme yg lebih siap untuk bridge
+ * 4. memiliki nama variable yg mirip dengan mycurl
+ * inspired by http://vipld.com/how-to-download-video-from-youtube-using-php/
+ */
+class youtube {
+    public $output = '';
+    public $video_url = '';
+    public $title = '<h3>Youtube Downloads by @uwiuw</h3>';
+
+    function get_flv($data)
+    {
+
+        //After &fmt_url_map=
+        //Before &
+        //Split by %2C
+        //Select first
+        //After %7C
+        if(eregi('fmt_url_map',$data))
+        {
+            $data = end(split('&fmt_url_map=',$data));
+            $data = current(split('&',$data));
+            $split = explode('%2C',$data);
+            $data = $split[0];
+            $data = end(split('%7C',$data));
+            return(urldecode($data));
+        }else{
+            if(eregi('verify-age-details',$data))
+            {
+                echo 'Age verification needed<br>';
+            }
+            return(false);
+        }
+    }
+
+    function get_html($url)
+    {
+        $ch = curl_init();
+        $header[0] = "Accept: text/xml,application/xml,application/xhtml+xml,";
+        $header[0] .= "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5";
+        $header[] = "Cache-Control: max-age=0";
+        $header[] = "Connection: keep-alive";
+        $header[] = "Keep-Alive: 300";
+        $header[] = "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7";
+        $header[] = "Accept-Language: en-us,en;q=0.5";
+        $header[] = "Pragma: "; //browsers keep this blank.
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.0;en-US;rv:1.4) Gecko/20030624 Netscape/7.1 (ax)');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_REFERER, "http://www.youtube.com/");
+        curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
+        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, COOKIE);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, COOKIE);
+        $result = curl_exec ($ch);
+        if (!$result)
+        {
+            echo "cURL error number:" .curl_errno($ch);
+            echo "cURL error:" . curl_error($ch);
+            exit;
+        }
+        curl_close ($ch);
+        return($result);
+    }
+
+    function get_file($url, $filename)
+    {
+        $file = fopen($filename, 'wb');
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_FILE, $file);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, COOKIE);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, COOKIE);
+        curl_exec($ch);
+        curl_close($ch);
+        fclose($file);
+        
+        return(true);
+    }
+
+    function get_playlist($url)
+    {
+        $data = get_html($url);
+        $data = end(split('FULL_SEQUENTIAL_VIDEO_LIST',$data));
+        $data = current(split('FULL_SHUFFLED_VIDEO_LIST',$data));
+        $data = substr(ereg_replace('[^-_a-zA-Z,"0-9]', '', $data),0,-1);
+        eval('$tracks = array('.$data.');');
+
+        return($tracks);
+    }
+
+    /***
+     * buat kemampaun method bisa mereturn value url yg berasal dari kumpulan array
+     * coba periksa cara penggunaannya pada class ini
+     */
+    function download_playlist($tracks)
+    {
+        foreach($tracks as $id)
+        {
+            if (!is_integer($id)) {
+                continue;
+            }
+
+            $data = get_html('http://youtube.com/watch?v='.$id);
+            if ($data != '') {
+                $this->download_track($data);
+            }
+        }
+    }
+
+    /**
+     * @todo    buat class ini bisa mengkomunikasikan pesan error yg terjadi
+     *          dengan form yg ada di home.php. Saat ini internal error cuma
+     *          bisa di-echo. Tapi tidak bisa dibypass ke class mycurl
+     *          dan dioutput dengan benar pada form html yg ada pada home.php
+     *
+     * @param <type> $data
+     * @return <type>
+     */
+    function download_track($data)
+    {
+        $name = end(split('eow-title',$data));
+        $name = current(split('">',$name));
+        $name = ereg_replace('[^-_a-zA-Z,"\' :0-9]',"",end(split('title="',$name)));
+        $name = ereg_replace(' ','_',$name);
+
+        $filename = getcwd() . '\\' . $name.'.flv';
+        if(!file_exists($filename))
+        {
+            echo 'Downloading  : '. $filename;
+            $flv = $this->get_flv($data);
+            if($flv)
+            {
+                flush();
+                if($hthis->get_file($flv, $filename))
+                {
+                    echo 'Done<br> the file is ' . $filename;
+                }
+                flush();
+            }
+        } else {
+            echo "$filename is exist";
+        }
+
+        return $this->video_url;
+    }
+
+    /**
+     * @todo testing how the brigde works
+     * @return string url file
+     */
+    public function do_inject(){
+        if ($output = $this->output) {
+            return $this->download_track($data);
+        }
+    }
+
+    function init($url) {
+        //make the download have no script time limitation. it will excecuted forever if they have to
+        ini_set('max_execution_time',0);
+
+        $vars = end(explode('?',$url));
+        $pairs = explode('&',$vars);
+        foreach($pairs as $pair)
+        {
+            $var = explode('=',$pair);
+            $data[$var[0]] = $var[1];
+        }
+        if($data['v']>0)
+        {
+            $this->download_playlist(get_playlist($url));
+            return $url;
+        }else{
+            $this->video_url = 'http://youtube.com/watch?v='.$data['v'];
+            $this->download_track(get_html($this->video_url));
+
+            return $this->video_url;
         }
     }
 }
