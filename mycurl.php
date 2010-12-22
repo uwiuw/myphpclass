@@ -583,7 +583,7 @@ class youtube {
             if($flv)
             {
                 flush();
-                if($hthis->get_file($flv, $filename))
+                if($this->get_file($flv, $filename))
                 {
                     echo 'Done<br> the file is ' . $filename;
                 }
@@ -623,7 +623,7 @@ class youtube {
             return $url;
         }else{
             $this->video_url = 'http://youtube.com/watch?v='.$data['v'];
-            $this->download_track(get_html($this->video_url));
+            $this->download_track($this->get_html($this->video_url));
 
             return $this->video_url;
         }
