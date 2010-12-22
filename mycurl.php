@@ -17,14 +17,12 @@
  * @todo otomatic download --> make this class able to download file without user have to click the link and
  *      save it via browser. if possible, let's the class do it for yoou
  * @todo if otomatic download berhasil maka tambahkan cronjob. kemampuan mengeksekusi cron
- *      sehingga bisa melakukan download sesuai interval yg telah ditentukan di dalam database
- * @todo tambahkan kemampuan mendownload dari berbagai layanan website populer
+ *      sehingga bisa melakukan download sesuai interval yg telah ditentukan sebelumnya
+ * @todo tambahkan kemampuan mendownload video/ebook dari berbagai layanan website populer
  *          1. youtube
  *          2. youporn
- *          3. dll
+ *          3. kazeemovie
  *          4. komik
- * @todo buat method yg mampu mengurus class yg bekerja sebagai loop. class ini akan diinjekkan kedalam
-	class mycurl sehingga keduanya bisa independent dari satu sama lain akan tetapi tetap bisa bekerja sama
  * @author uwiuw
  * @copyright 2010 uwiuw
  */
@@ -33,7 +31,8 @@ class mycurl{
 
     var $myurl;
     var $token;
-    var $title = '<h1>My Curl Form of Madness</h1>';
+    var $title = '<h1>My Curl Library</h1>';
+    var $message = array();
 
     public function mycurl(){
         $this->myurl = '';
@@ -44,6 +43,21 @@ class mycurl{
     }
     public function get_title() {
         return $this->title;
+    }
+
+    /**
+     * set/adding messages
+     * 
+     * @param <type> $message
+     * @param <type> $message_key
+     */
+    public function set_AddMessage($message, $message_key) {
+        $message_arr = $this->get_message();
+        $message_arr[$message_key] = $message;
+        $this->message = $message_arr;
+    }
+    public function get_messages() {
+        return $this->message;
     }
 
     /**
@@ -66,6 +80,12 @@ class mycurl{
         }
     }
 
+    /**
+     * get the size of the page that curled
+     *
+     * @param <type> $url
+     * @return float ukuran content file
+     */
     public function get_webPageFileSize($url =''){
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_NOBODY, true);
