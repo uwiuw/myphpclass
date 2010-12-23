@@ -23,6 +23,8 @@
  *          2. youporn
  *          3. kazeemovie
  *          4. komik
+ * @todo    hoto handle : "SSL certificate problem, verify that the CA cert is OK.
+ *          Details: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed"
  * @author uwiuw
  * @copyright 2010 uwiuw
  */
@@ -47,12 +49,12 @@ class mycurl{
 
     /**
      * set/adding messages
-     * 
+     *
      * @param <type> $message
      * @param <type> $message_key
      */
     public function set_AddMessage($message, $message_key) {
-        $message_arr = $this->get_message();
+        $message_arr = $this->get_messages();
         $message_arr[$message_key] = $message;
         $this->message = $message_arr;
     }
@@ -374,16 +376,20 @@ class mycurl{
             $header['errno'] = $err;
             $header['errmsg'] = $errmsg;
             $header['content'] = $content;
-
             /**
              * Error Checking
              */
             if ( $header['errno'] != 0 ) {
                 $error[] = 'error: bad url, timeout, redirect loop';
+                $message_key = "error err_$err";
+                $this->set_AddMessage($errmsg, $message_key);
             }
 
             if ( $header['http_code'] != 200 ) {
-                $error[] = 'error: no page, no permissions, no service';
+                $message = 'http_code error. no page, no permissions, no service';
+                $error[] = $message;
+                $message_key = 'error err_200';
+                $this->set_AddMessage($message, $message_key);
             }
 
             if (isset($error)) {
@@ -422,13 +428,17 @@ class mycurl{
             if (method_exists($external_object, 'do_inject')) {
                 return $external_object->do_inject();
             } else {
-                echo get_class($external_object)  . ' class object has no "do_inject" method. This method is
+                $message = get_class($external_object)  . ' class object has no "do_inject" method. This method is
                     the brigde to communicate with mycurl class';
+                $message_key = 'error err_112';
+                $this->set_AddMessage($message, $message_key);
                 return false;
             }
         } else {
-           echo 'The object is not an instance of a class.';
-           return false;
+            $message = 'The object is not an instance of a class.';
+            $message_key = 'error err_111';
+            $this->set_AddMessage($message, $message_key);
+            return false;
         }
     }
 
